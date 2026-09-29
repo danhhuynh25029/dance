@@ -4,7 +4,7 @@
   "description": "Coder and reviewer subagents with a production-safety skill (no full table scans, idempotent money flows, no leaks or races) and a hook that blocks subagent git commit/push.",
   "author": {
     "name": "Danh Huynh",
-    "email": "62138169+danhhuynh25029@users.noreply.github.com",
+    "email": "danhhuynh250@gmail.com",
     "url": "https://github.com/danhhuynh25029"
   },
   "homepage": "https://github.com/danhhuynh25029/dance",

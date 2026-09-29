@@ -1,0 +1,82 @@
+# dance
+
+A Claude Code plugin that splits work between two subagents: one writes code, the other reviews it independently. It also includes a production-safety checklist for backend code and a hook that stops both subagents from committing or pushing.
+
+## What's included
+
+| Component | Type | Purpose |
+|---|---|---|
+| `coder` | Subagent | Implements features, fixes and refactors. Reads surrounding code first, makes focused changes, runs build/tests, and reports what it changed. Preloads the `production-safety` skill. |
+| `reviewer` | Subagent | Read-only code review of a diff, branch or files. Runs on Sonnet so it doesn't share the coder's blind spots, and treats any claims about the code as unverified. Reports findings by severity with `file:line` and a suggested fix. |
+| `production-safety` | Skill | Checklist for backend changes: no full table scans, idempotent payment/money flows, no memory/resource leaks, no race conditions. |
+| `block-subagent-git` | Hook (`PreToolUse` on Bash) | Blocks `git commit` and `git push` when run by `coder` or `reviewer`. Your main session can still commit. |
+
+## Install
+
+```bash
+claude plugin marketplace add danhhuynh25029/dance
+claude plugin install dance@dance
+```
+
+Start a new Claude Code session afterwards so the agents, skill and hook load.
+
+Requirements: `jq` on your `PATH` (used by the hook script) and a Unix-like shell (macOS, Linux, or WSL).
+
+## Usage
+
+Name the agent in your request:
+
+```
+Use the coder agent to add an endpoint that lists classes by date.
+```
+
+```
+Use the reviewer agent to review the uncommitted changes.
+```
+
+Or chain them:
+
+```
+Use the coder agent to implement X (requirements: ...).
+Then use the reviewer agent on the git diff. Give it only the original requirements, not the coder's report.
+If it reports Critical or Major issues, have the coder fix them and review again.
+```
+
+Tips:
+
+- **Don't commit between coding and review.** By default the reviewer reads the uncommitted diff (`git diff`, `git diff --staged`). If you have committed, tell it which branch or commit range to review.
+- **Keep the reviewer independent.** Each subagent starts with a fresh context and sees only the prompt it is given. Pass it the requirements and the scope, not the coder's summary.
+- **The reviewer never edits files.** Send its findings back to the coder to fix.
+
+## The git guard
+
+The hook reads the `agent_type` Claude Code attaches to tool calls made inside a subagent. If the agent is `coder` or `reviewer` (with or without a plugin prefix such as `dance:coder`) and the command contains `git commit` or `git push`, the call is blocked and the agent is told to leave committing to you.
+
+It matches the command text, so it will not catch a commit hidden inside another script (for example `./release.sh` that runs `git commit` internally).
+
+## Updating
+
+After pulling changes or editing a local checkout:
+
+```bash
+claude plugin marketplace update dance
+claude plugin update dance@dance
+```
+
+Then start a new session.
+
+## Layout
+
+```
+.claude-plugin/
+  plugin.json          # plugin manifest
+  marketplace.json     # single-plugin marketplace pointing at this repo
+agents/
+  coder.md
+  reviewer.md
+skills/
+  production-safety/SKILL.md
+hooks/
+  hooks.json           # registers the PreToolUse hook
+  block-subagent-git.sh
+```
