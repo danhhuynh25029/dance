@@ -1,0 +1,16 @@
+{
+  "name": "dance",
+  "description": "Personal marketplace for the dance plugin: coder/reviewer subagents, production-safety skill, and a git commit/push guard.",
+  "owner": {
+    "name": "Danh Huynh",
+    "email": "62138169+danhhuynh25029@users.noreply.github.com",
+    "url": "https://github.com/danhhuynh25029"
+  },
+  "plugins": [
+    {
+      "name": "dance",
+      "source": "./",
+      "description": "Coder and reviewer subagents with a production-safety skill and a git commit/push guard hook."
+    }
+  ]
+}

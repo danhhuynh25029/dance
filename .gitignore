@@ -1,0 +1,3 @@
+.DS_Store
+# Local Claude Code settings for developing this repo (not part of the plugin)
+.claude/
