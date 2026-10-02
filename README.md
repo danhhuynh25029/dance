@@ -1,6 +1,6 @@
 # dance
 
-A Claude Code plugin that splits work between two subagents: one writes code, the other reviews it independently. It also includes a production-safety checklist for backend code and a hook that stops both subagents from committing or pushing.
+A Claude Code plugin that splits work between two subagents, one writing code and one reviewing it independently, with an orchestrator agent that runs the loop between them. It also includes a production-safety checklist for backend code and a hook that stops both subagents from committing or pushing.
 
 ## What's included
 
@@ -8,6 +8,8 @@ A Claude Code plugin that splits work between two subagents: one writes code, th
 |---|---|---|
 | `coder` | Subagent | Implements features, fixes and refactors. Reads surrounding code first, makes focused changes, runs build/tests, and reports what it changed. Preloads the `production-safety` skill. |
 | `reviewer` | Subagent | Read-only code review of a diff, branch or files. Runs on Sonnet so it doesn't share the coder's blind spots, and treats any claims about the code as unverified. Reports findings by severity with `file:line` and a suggested fix. |
+| `orchestrator` | Main-session agent | Controls `coder` and `reviewer`: delegates every code change through the `orchestrate` loop and never edits files itself. Start it with `claude --agent dance:orchestrator`. |
+| `orchestrate` | Skill | The loop the orchestrator follows, also usable from a normal session: sends the task to `coder`, then automatically has a fresh `reviewer` review the diff, sends Critical/Major findings back to the coder, and repeats (max 3 review rounds) before reporting to you. |
 | `production-safety` | Skill | Checklist for backend changes: no full table scans, idempotent payment/money flows, no memory/resource leaks, no race conditions. |
 | `block-subagent-git` | Hook (`PreToolUse` on Bash) | Blocks `git commit` and `git push` when run by `coder` or `reviewer`. Your main session can still commit. |
 
@@ -23,6 +25,26 @@ Start a new Claude Code session afterwards so the agents, skill and hook load.
 Requirements: `jq` on your `PATH` (used by the hook script) and a Unix-like shell (macOS, Linux, or WSL).
 
 ## Usage
+
+### Orchestrator as the main agent
+
+```bash
+claude --agent dance:orchestrator
+```
+
+The whole session then runs as the orchestrator. Ask for changes as usual; it sends each one to the coder, has the reviewer check it, loops fixes, and reports back. To make it the default for a project, add `"agent": "dance:orchestrator"` to that project's `.claude/settings.json`.
+
+The orchestrator has to be the main agent, not a subagent, because subagents can't launch other subagents.
+
+### Orchestrate from a normal session
+
+```
+/dance:orchestrate add an endpoint that lists classes by date (paginated, max 100 per page)
+```
+
+Claude also loads this skill on its own when it delegates work to the coder agent, so the reviewer runs after every coder task.
+
+### Calling the agents directly
 
 Name the agent in your request:
 
@@ -72,9 +94,11 @@ Then start a new session.
   plugin.json          # plugin manifest
   marketplace.json     # single-plugin marketplace pointing at this repo
 agents/
+  orchestrator.md      # main-session agent
   coder.md
   reviewer.md
 skills/
+  orchestrate/SKILL.md
   production-safety/SKILL.md
 hooks/
   hooks.json           # registers the PreToolUse hook

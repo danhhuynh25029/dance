@@ -1,6 +1,6 @@
 {
   "name": "dance",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Coder and reviewer subagents with a production-safety skill (no full table scans, idempotent money flows, no leaks or races) and a hook that blocks subagent git commit/push.",
   "author": {
     "name": "Danh Huynh",
